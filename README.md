@@ -27,4 +27,4 @@ This problem has been tested under local workstations, google cloud Ubuntu image
 ##### responsibility ###
 ########################
 
-Well, use under your own risk. I won't be able to maintain the code.
+Well, use at your own risk. I won't be able to maintain the code.
