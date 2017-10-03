@@ -4,6 +4,8 @@ import time
 from subprocess import call
 from multiprocessing import Pool
 import operator
+import json
+import numpy as np
 
 def runProcess(exe):
     p = subprocess.Popen(exe,shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -29,7 +31,6 @@ def ProcessFile(fname):
     for i in  sorted(dp.t3['EventID'].unique()):
 
         try:
-            #print i
             image = dp.ConstructImage(i)
             image = FilterBackground(image)
             r = GetRange(image.astype(np.uint8),0)
