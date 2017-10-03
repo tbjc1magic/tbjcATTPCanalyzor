@@ -17,6 +17,22 @@ besides built-in Anaconda packages, you will also need opencv2 and seaborn (main
 conda install -c menpo opencv
 conda install seaborn
 
+########################
+##### running ##########
+########################
+
+under the main folder, run for the multi-process mode
+
+python Multi.py
+
+the Multi.py will produce a text file contains a list of ranges for reaction length.
+
+Or run the jupyter notebook interactive mode
+
+jupyter notebook
+
+once you in the jupyter browser, open either main.ipynb or MultiProcess.ipynb
+
 #####################
 ##### test ##########
 #####################
