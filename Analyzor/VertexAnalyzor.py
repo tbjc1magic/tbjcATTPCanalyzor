@@ -4,6 +4,7 @@ import cv2
 import seaborn as sns
 import matplotlib.path as mplPath
 import matplotlib.patches as patches
+import math
 
 def AveDist(x,y,k,b):
     return np.sum(np.abs(k*x+b-y)/(k*k+1))/x.shape[0]
@@ -68,8 +69,9 @@ def FilterBackground(image):
 
     return image_
 
-def GetRange(pic,debug_mode=0, center_width = 12, quadrant_thresh=100, center_thresh=300,
-             err_thresh =12, spread_thresh=6 ):
+def GetEventPositions(pic,debug_mode=0, center_width = 12, quadrant_thresh=100,
+        center_thresh=300, err_thresh =12, spread_thresh=6 ):
+
     pic_ = np.copy(pic)
 
     points = TipFinder(pic_,debug_mode)
@@ -107,7 +109,19 @@ def GetRange(pic,debug_mode=0, center_width = 12, quadrant_thresh=100, center_th
             if s_>60 and err_<3: plt.plot(np.linspace(0,600,2),b_+k_*np.linspace(0,600,2))
         plt.scatter([xc],[yc],marker='o',s=300,c='g')
 
-    return ((xc-xv)**2+(yc-yv)**2)**0.5
+    return points, (xc,yc)
+
+def GetLineInfo(p1,p2, L_thre = -5):
+    (x1,y1),(x2,y2) = p1,p2
+    L = math.hypot(x2-x1,y2-y1)
+
+    if L<L_thre:return None, None
+
+    return math.acos((x2-x1)/L)/math.pi*180,L
+
+def GetEventInfo(points,p0):
+    points, p0 = np.array(points), np.array(p0)
+    return [GetLineInfo(p,p0) for p in points], math.hypot(*(points[-1]-p0))
 
 def Distance(contours,n1,n2):
 

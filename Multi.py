@@ -1,5 +1,6 @@
+
 from Analyzor.DataFactory import DataFactory
-from Analyzor.VertexAnalyzor import GetRange,FilterBackground
+from Analyzor import VertexAnalyzor
 import time
 from subprocess import call
 from multiprocessing import Pool
@@ -24,17 +25,22 @@ def runProcess(exe):
 SQLpath ="data/SQL/10C/"
 
 def ProcessFile(fname):
-    print fname
-    dp = DataFactory(fname,SQLpath+'ProtoMap.db')
 
+    r = fname.split('/')[-1].split('.')[0].split('_')
+    runID,fID = map(int,r)
+
+    dp = DataFactory(fname,SQLpath+'ProtoMap.db')
     dist = []
     for i in  sorted(dp.t3['EventID'].unique()):
 
         try:
+            #print i
             image = dp.ConstructImage(i)
-            image = FilterBackground(image)
-            r = GetRange(image.astype(np.uint8),0)
-            dist.append(r)
+            image = VertexAnalyzor.FilterBackground(image)
+            points,(xc,yc) = VertexAnalyzor.GetEventPositions(image,0)
+            r = VertexAnalyzor.GetEventInfo(points,(xc,yc))
+            dist.append({'runID':runID,'fileID':fID,
+                'eventID':i,'data':r})
         except:
             pass
 
@@ -42,13 +48,13 @@ def ProcessFile(fname):
 
 if __name__ == "__main__":
 
-    pool = Pool(processes=8)
+    pool = Pool(processes=4)
 
     param = []
-    runs = [85]
+    runs = [85,88]
 
     for run in runs:
-        for i in range(2):
+        for i in range(16):
             path = SQLpath+'{:04d}_{:04d}.db'.format(run,i)
             param.append(path)
 
@@ -59,7 +65,7 @@ if __name__ == "__main__":
 
     print "total process cost "+str(end_time - start_time)
 
-    data = [_ for _ in reduce(operator.add,res) if _<1e6]
+    data = reduce(operator.add,res)
 
     with open('data.dat','w') as f:
         json.dump(data,f)

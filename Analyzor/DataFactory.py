@@ -11,21 +11,19 @@ class DataFactory(object):
 
         ##### set single thread computation #########
         cv2.setNumThreads(1)
+        self.fname = data_path.split('/')[-1][:-3]
 
-        print "initialization will take some time"
+        print self.fname+" initialization will take some time"
         start_time = time.time()
         engine = create_engine('sqlite+pysqlite:///'+data_path)
         ADCdf = pd.io.sql.read_sql("SELECT * FROM ADC", engine)
         end_time = time.time()
-        print end_time-start_time
 
-        print "test here"
         engine = create_engine('sqlite+pysqlite:///'+map_path)
         ProtoMapdf = pd.io.sql.read_sql("SELECT * FROM ProtoMap", engine)
-        print ProtoMapdf.head()
-        print "loading finished"
+        print  self.fname+"loading finished"
 
-        print "begin processing"
+        print self.fname+" begin processing"
         start_time = time.time()
         ADCdfn = ADCdf.copy()
 
@@ -34,7 +32,6 @@ class DataFactory(object):
         mask= (ADCdfn.iloc[:,3:-1]>20) & (ADCdfn.iloc[:,3:-1].gt(ADCdfn['max']*0.2,axis=0))
         ADCdfn.iloc[:,3:-1] = ADCdfn.iloc[:,3:-1][mask].fillna(0)
         end_time = time.time()
-        print end_time-start_time
 
         start_time = time.time()
         n1 = [_ for _ in ADCdfn.columns if type(_) is np.uint16]
@@ -42,9 +39,8 @@ class DataFactory(object):
         t2 = pd.melt(ADCdfn.iloc[:],id_vars=n2,value_vars=n1).drop(['ID'],axis=1)
         t2.columns = ['EventID','PadNum','max','time','charge']
         self.t3 = pd.merge(t2[t2['charge']>20],ProtoMapdf,on='PadNum')[['EventID','PadNum','time','PadX','PadY','charge']]
-        print time.time() - start_time
 
-        print "processing finished"
+        print self.fname+" processing finished"
 
         self.ADCdfn = ADCdfn
         self.ADCdf = ADCdf
@@ -86,13 +82,17 @@ class DataFactory(object):
         else:
             image = image1+image2[::-1]
 
+        #image_ = image1+image2
+
         image = np.where(image>100,255,0).astype(np.uint8)
 
         gray = cv2.GaussianBlur(image, (3, 3), 0)
         ret,im = cv2.threshold(gray.astype(np.uint8), 10, 255, cv2.THRESH_BINARY)
 
         thresh = im.astype(np.uint8)
-        for _ in range(3):
+        for _ in range(2):
             thresh = cv2.erode(thresh, None, iterations=1)
+        for _ in range(2):
             thresh = cv2.dilate(thresh, None, iterations=1)
+        #return thresh,image1,image2,image,image_
         return thresh
