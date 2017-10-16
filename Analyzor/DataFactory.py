@@ -16,16 +16,19 @@ class DataFactory(object):
         print self.fname+" initialization will take some time"
         start_time = time.time()
         engine = create_engine('sqlite+pysqlite:///'+data_path)
-        ADCdf = pd.io.sql.read_sql("SELECT * FROM ADC", engine)
+        self.ADCdf = pd.io.sql.read_sql("SELECT * FROM ADC", engine)
         end_time = time.time()
 
         engine = create_engine('sqlite+pysqlite:///'+map_path)
-        ProtoMapdf = pd.io.sql.read_sql("SELECT * FROM ProtoMap", engine)
+        self.ProtoMapdf = pd.io.sql.read_sql("SELECT * FROM ProtoMap", engine)
         print  self.fname+"loading finished"
+
+    def InitT3(self):
 
         print self.fname+" begin processing"
         start_time = time.time()
-        ADCdfn = ADCdf.copy()
+        ADCdfn = self.ADCdf.copy()
+        ProtoMapdf = self.ProtoMapdf
 
         ADCdfn.columns = [np.uint16(_[1:]) if re.match('t\d+',_) is not None else str(_) for _ in ADCdfn.columns ]
         ADCdfn['max'] = ADCdfn.iloc[:,3+50:-50].max(axis=1)
@@ -43,10 +46,9 @@ class DataFactory(object):
         print self.fname+" processing finished"
 
         self.ADCdfn = ADCdfn
-        self.ADCdf = ADCdf
-        self.ProtoMapdf = ProtoMapdf
 
     def ConstructImage(self,EID):
+
         t3 = self.t3
 
         tmp = t3[(t3['EventID']==EID)&(t3['charge']>3)].copy()
@@ -82,8 +84,6 @@ class DataFactory(object):
         else:
             image = image1+image2[::-1]
 
-        #image_ = image1+image2
-
         image = np.where(image>100,255,0).astype(np.uint8)
 
         gray = cv2.GaussianBlur(image, (3, 3), 0)
@@ -94,5 +94,16 @@ class DataFactory(object):
             thresh = cv2.erode(thresh, None, iterations=1)
         for _ in range(2):
             thresh = cv2.dilate(thresh, None, iterations=1)
-        #return thresh,image1,image2,image,image_
+
         return thresh
+
+    def InitMesh(self):
+        def Process(Event):
+            mesh = Event.iloc[:,3:][Event.iloc[:,3:]>20].sum(axis=0)
+            return mesh
+        self.mesh_df = self.ADCdf.groupby('EventID').apply(Process)
+
+    def plotMap(self):
+        ProtoMapdf = self.ProtoMapdf
+        for row in ProtoMapdf.iloc[:252].iterrows():
+            plt.scatter(row[1]['PadX'],row[1]['PadY'],marker='${}$'.format(row[1]['PadNum']),s=200)
