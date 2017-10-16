@@ -30,6 +30,7 @@ def ProcessFile(fname):
     runID,fID = map(int,r)
 
     dp = DataFactory(fname,SQLpath+'ProtoMap.db')
+    dp.InitT3()
     dist = []
     for i in  sorted(dp.t3['EventID'].unique()):
 
@@ -38,6 +39,9 @@ def ProcessFile(fname):
             image = dp.ConstructImage(i)
             image = VertexAnalyzor.FilterBackground(image)
             points,(xc,yc) = VertexAnalyzor.GetEventPositions(image,0)
+            xscale , yscale = 80/1000.0*2.459,0.1
+            points = np.array([(x*xscale,y*yscale) for x,y in points])
+            xc,yc = xc*xscale, yc*yscale
             r = VertexAnalyzor.GetEventInfo(points,(xc,yc))
             dist.append({'runID':runID,'fileID':fID,
                 'eventID':i,'data':r})
