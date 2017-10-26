@@ -12,7 +12,7 @@ def AveDist(x,y,k,b):
 def r2(x,y,k,b):
     return 1-np.sum(((x*k+b)-y)**2)/np.sum((y-np.mean(y))**2)
 
-def VertexPos(fits,y0):
+def VertexPos_(fits,y0):
     fits = [f for f in fits if f[0]>60 and f[-1]<2.5]
 
     num_lines = len(fits)
@@ -29,6 +29,58 @@ def VertexPos(fits,y0):
         k2,b2 = fits[1][1:3]
         return (b2-b1)/(k1-k2), (k2*b1-k1*b2)/(k2-k1)
 
+def VertexPos(image_,ps):
+    ys,xs = np.where(image_)
+    results = []
+
+    def Error(xs,ys,xc,yc,ps):
+
+        xc,yc = float(xc),float(yc)
+        ps = ps.astype(np.float)
+
+        def GetDist(xs,ys,xm,ym):
+            Dist = np.ones(xs.shape[0])*1e5
+            
+            if abs(xc-xm)<0.1: 
+                idx = np.where((ys-yc)*(ym-yc)>=0)
+                Dist[idx] = np.abs(xs[(ys-yc)*(ym-yc)>=0]-xc)
+            else:
+                k = (yc-ym)/(xc-xm)
+                b = (xc*ym-yc*xm)/(xc-xm)
+
+                Di = xs-xc+k*ys-k*yc
+                Di_ = xm-xc+k*ym-k*yc
+
+                idx = np.where(Di*Di_>=0)
+
+                Dist[idx] = np.sqrt(np.power(xs[idx]*k+b-ys[idx],2)/(k*k+1))
+
+            return Dist
+
+        Dist = [GetDist(xs,ys,xm,ym) for xm,ym in ps]
+
+        return np.sum(np.min(np.stack(Dist),axis=0))
+
+
+    path = mplPath.Path(ps[[0,1,2,0]])
+
+    x = range(0,500)
+    y = range(0,300)
+
+    xv, yv = np.meshgrid(x, y)
+    xv, yv = xv.reshape(-1), yv.reshape(-1)
+
+    pix = np.stack([xv,yv]).T
+    mask = path.contains_points(pix)
+
+    res = []
+    for x_,y_ in pix[mask]:
+        err = Error(xs,ys,x_,y_,ps)
+        res.append((x_,y_,err))
+
+    return sorted(res,key=lambda x:x[2])[0][:-1]    
+    
+    
 def tbjcfit(xs,ys):
     xc,yc = xs.mean(),ys.mean()
     u,s,v = np.linalg.svd(np.array([xs-xc,ys-yc]).T)
@@ -62,14 +114,21 @@ def FilterBackground(image):
 
     ys,xs = np.where(image)
     path1 = mplPath.Path(hull[:,0,:])
-    patch = patches.PathPatch(path1, facecolor=(0,0,0,0),EdgeColor='r', lw=2)
     mask = path1.contains_points(zip(xs,ys))
     image_ = np.zeros(image.shape,dtype=np.uint8)
     image_[ys[mask],xs[mask]] = 255
 
     return image_
 
-def GetEventPositions(pic,debug_mode=0, center_width = 12, quadrant_thresh=100,
+
+def GetEventPositions(pic,debug_mode=0):
+    pic_ = np.copy(pic)
+    points = TipFinder(pic_,debug_mode)
+    xc,yc = VertexPos(pic_,points)
+    
+    return points, (xc,yc)
+
+def GetEventPositions_(pic,debug_mode=0, center_width = 12, quadrant_thresh=100,
         center_thresh=300, err_thresh =12, spread_thresh=6 ):
 
     pic_ = np.copy(pic)
