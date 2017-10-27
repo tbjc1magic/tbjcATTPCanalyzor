@@ -40,11 +40,14 @@ def ProcessFile(fname):
             image = VertexAnalyzor.FilterBackground(image)
             points,(xc,yc) = VertexAnalyzor.GetEventPositions(image,0)
             xscale , yscale = 80/1000.0*2.459,0.1
-            points = np.array([(x*xscale,y*yscale) for x,y in points])
             xc,yc = xc*xscale, yc*yscale
-            r = VertexAnalyzor.GetEventInfo(points,(xc,yc))
+            points = [(x*xscale,y*yscale) for x,y in points]+[(xc,yc)]
             dist.append({'runID':runID,'fileID':fID,
-                'eventID':i,'data':r})
+                'eventID':i,'data':points})
+            #r = VertexAnalyzor.GetEventInfo(points,(xc,yc))
+            #dist.append({'runID':runID,'fileID':fID,
+            #    'eventID':i,'data':r})
+
         except:
             pass
 
@@ -55,10 +58,10 @@ if __name__ == "__main__":
     pool = Pool(processes=4)
 
     param = []
-    runs = [85,88]
+    runs = [85,]
 
     for run in runs:
-        for i in range(16):
+        for i in range(1):
             path = SQLpath+'{:04d}_{:04d}.db'.format(run,i)
             param.append(path)
 
