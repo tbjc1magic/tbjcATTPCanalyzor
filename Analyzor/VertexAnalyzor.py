@@ -56,14 +56,6 @@ def VertexPos(image_,ps):
 
     return sorted(res,key=lambda x:x[2])[0][:-1]
 
-def tbjcfit(xs,ys):
-    xc,yc = xs.mean(),ys.mean()
-    u,s,v = np.linalg.svd(np.array([xs-xc,ys-yc]).T)
-    xi,yi = v[0]
-    k = yi/(xi+1e-9*abs(xi)/xi)
-    b = yc-k*xc
-    return k,b
-
 def FilterBackground(image):
     hull = convexHull(image, debug_mode = False)
 
@@ -81,18 +73,6 @@ def GetEventPositions(pic,debug_mode=0):
     xc,yc = VertexPos(pic_,points)
 
     return points, (xc,yc)
-
-def GetLineInfo(p1,p2, L_thre = -5):
-    (x1,y1),(x2,y2) = p1,p2
-    L = math.hypot(x2-x1,y2-y1)
-
-    if L<L_thre:return None, None
-
-    return math.acos((x2-x1)/L)/math.pi*180,L
-
-def GetEventInfo(points,p0):
-    points, p0 = np.array(points), np.array(p0)
-    return [GetLineInfo(p,p0) for p in points], math.hypot(*(points[-1]-p0))
 
 def Distance(contours,n1,n2):
 
