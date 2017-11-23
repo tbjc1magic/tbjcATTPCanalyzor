@@ -11,6 +11,8 @@ def tbjcfit(xs,ys):
 
 def GetLineInfo(p1,p2, L_thre = -5):
     (x1,y1),(x2,y2) = p1,p2
+    if abs(x1-x2) <0.01: return 90,abs(y1-y2)
+    
     L = math.hypot(x2-x1,y2-y1)
 
     if L<L_thre:return None, None

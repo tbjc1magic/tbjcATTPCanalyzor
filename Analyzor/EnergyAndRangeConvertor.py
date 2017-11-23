@@ -17,20 +17,20 @@ class PowerTable(object):
         data = []
 
         ## MeV:1, cm:1
-        units = {'keV':0.001,'MeV/mm':10,'MeV':1}
+        units = {'keV':0.001,'MeV/mm':10,'MeV':1,'m':100,'mm':0.1,'um':1e-5}
 
         with open(fname) as f:
             for line in f:
                 res = re.match(fmt,line)
                 if res is None: continue
-                E,Eu, dE_dX1, dE_dX2, L = res.groups()[:5]
-                data.append({'E':float(E)*units[Eu],'Range':float(L)/10.0})
+                E,Eu, dE_dX1, dE_dX2, L, Lu = res.groups()[:6]
+                data.append({'E':float(E)*units[Eu],'Range':float(L)*units[Lu]})
 
-	if not data:
+        if not data:
             raise Exception("can you fucking at least get a valid table?")
-
-        self.MaxR = max(_['E'] for _ in data)
-        self.MaxE0 = max(_['Range'] for _ in data)
+            
+        self.MaxE0 = max(_['E'] for _ in data)
+        self.MaxR = max(_['Range'] for _ in data)
 
         self.R2E = interp1d(*zip(*[(_['Range'],_['E'],) for _ in data]),
                 fill_value='extrapolate' )

@@ -5,8 +5,13 @@ import seaborn as sns
 import matplotlib.path as mplPath
 import matplotlib.patches as patches
 import math
+from scipy.optimize import minimize
 
 def VertexPos(image_,ps):
+    '''
+    greedy search algorithm
+    '''
+    
     ys,xs = np.where(image_)
     results = []
 
@@ -56,8 +61,48 @@ def VertexPos(image_,ps):
 
     return sorted(res,key=lambda x:x[2])[0][:-1]
 
+def VertexPos_(image_,ps):
+    '''
+    gradient search algorithm
+    '''
+    ys,xs = np.where(image_)
+    results = []
+
+    def Error(xs,ys,xc,yc,ps):
+
+        xc,yc = float(xc),float(yc)
+        ps = ps.astype(np.float)
+
+        def GetDist(xs,ys,xm,ym):
+            Dist = np.ones(xs.shape[0])*1e5
+
+            if abs(xc-xm)<0.1:
+                idx = np.where((ys-yc)*(ym-yc)>=0)
+                Dist[idx] = np.abs(xs[(ys-yc)*(ym-yc)>=0]-xc)
+            else:
+                k = (yc-ym)/(xc-xm)
+                b = (xc*ym-yc*xm)/(xc-xm)
+
+                Di = xs-xc+k*ys-k*yc
+                Di_ = xm-xc+k*ym-k*yc
+
+                idx = np.where(Di*Di_>=0)
+
+                Dist[idx] = np.sqrt(np.power(xs[idx]*k+b-ys[idx],2)/(k*k+1))
+
+            return Dist
+
+        Dist = [GetDist(xs,ys,xm,ym) for xm,ym in ps]
+
+        return np.sum(np.min(np.stack(Dist),axis=0))
+
+    res = minimize(lambda x:Error(xs,ys,x[0],x[1],ps),x0=ps.mean(axis=0))
+    return res.x
+
 def FilterBackground(image):
+
     hull = convexHull(image, debug_mode = False)
+    if hull is None: return None
 
     ys,xs = np.where(image)
     path1 = mplPath.Path(hull[:,0,:])
@@ -70,6 +115,7 @@ def FilterBackground(image):
 def GetEventPositions(pic,debug_mode=0):
     pic_ = np.copy(pic)
     points = TipFinder(pic_,debug_mode)
+    if points is None: return None
     xc,yc = VertexPos(pic_,points)
 
     return points, (xc,yc)
@@ -128,7 +174,12 @@ def convexHull(thresh, debug_mode = 0):
 
     m1, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    gpc,gpa = Groups(contours)
+    ########## find grouped contours ######
+    try:
+        gpc,gpa =  Groups(contours)
+    except ValueError:
+        return None
+
     gpc = [np.concatenate(g,axis=0) for g in gpc]
 
     if debug_mode: plt.scatter(gpc[0][:,0,0],gpc[0][:,0,1])
@@ -170,7 +221,7 @@ def MaxEnclosedTriangle(hull):
 def TipFinder(thresh, debug_mode = 0):
 
     hull = convexHull(thresh, debug_mode)
-
+    if hull is None: return None
     #############################
     bA,bB,bC = MaxEnclosedTriangle(hull)
 
