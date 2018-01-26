@@ -29,6 +29,8 @@ def ProcessFile(fname):
     r = fname.split('/')[-1].split('.')[0].split('_')
     runID,fID = map(int,r)
 
+    print fname
+
     dp = DataFactory(fname,SQLpath+'ProtoMap.db')
     dp.InitT3()
     dist = []

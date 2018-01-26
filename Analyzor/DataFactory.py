@@ -16,7 +16,7 @@ class DataFactory(object):
         print self.fname+" initialization will take some time"
         start_time = time.time()
         engine = create_engine('sqlite+pysqlite:///'+data_path)
-        self.ADCdf = pd.io.sql.read_sql("SELECT * FROM ADC limit 10000", engine)
+        self.ADCdf = pd.io.sql.read_sql("SELECT * FROM ADC", engine)
         end_time = time.time()
 
         engine = create_engine('sqlite+pysqlite:///'+map_path)
